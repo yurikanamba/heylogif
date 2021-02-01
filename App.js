@@ -27,10 +27,11 @@ const App: () => React$Node = () => {
   async function fetchGifs(keyword) {
     try {
       const API_KEY = 'Rf18Q7xJzS3GY38swE3RkYX5PH3Axhpw';
-      const BASE_URL = 'http://api.giphy.com/v1/gifs/search';
-      const resJson = await fetch(
-        `${BASE_URL}?api_key=${API_KEY}&q=${keyword}`,
-      );
+      const BASE_URL = 'http://api.giphy.com/v1/gifs';
+      const endpoint = keyword
+        ? `${BASE_URL}/search?api_key=${API_KEY}&q=${keyword}`
+        : `${BASE_URL}/trending?api_key=${API_KEY}`;
+      const resJson = await fetch(endpoint);
       const res = await resJson.json();
       setGifs(res.data);
     } catch (error) {
@@ -70,7 +71,7 @@ const App: () => React$Node = () => {
                     updateTerm('');
                     setPlaceholderMessage('Search GIFs in Giphy...');
                     setMode('gif');
-                    fetchGifs('piglet');
+                    fetchGifs();
                   } else {
                     setPlaceholderMessage('Send message');
                     setMode('message');

@@ -19,9 +19,8 @@ import CloseButton from './assets/closebutton.svg';
 
 const App: () => React$Node = () => {
   const [gifs, setGifs] = useState([]);
-  const [term, updateTerm] = useState();
+  const [term, updateTerm] = useState('');
   const [selectedGif, setSelectedGif] = useState(null);
-  const [placeholderMessage, setPlaceholderMessage] = useState('Send message');
   const [mode, setMode] = useState('message');
 
   async function fetchGifs(keyword) {
@@ -40,7 +39,7 @@ const App: () => React$Node = () => {
   }
   function onEdit(newTerm) {
     updateTerm(newTerm);
-    fetchGifs(term);
+    fetchGifs(newTerm);
   }
 
   return (
@@ -69,11 +68,9 @@ const App: () => React$Node = () => {
                 onPress={() => {
                   if (mode === 'message') {
                     updateTerm('');
-                    setPlaceholderMessage('Search GIFs in Giphy...');
-                    setMode('gif');
                     fetchGifs();
+                    setMode('gif');
                   } else {
-                    setPlaceholderMessage('Send message');
                     setMode('message');
                     updateTerm('');
                   }
@@ -91,10 +88,14 @@ const App: () => React$Node = () => {
                 marginHorizontal: 10,
               }}>
               <TextInput
-                placeholder={placeholderMessage}
+                placeholder={
+                  mode === 'message' ? 'Send message' : 'Search GIFs in Giphy'
+                }
                 placeholderTextColor="#8F8F8F"
                 style={styles.textInput}
-                onChangeText={(text) => onEdit(text)}
+                onChangeText={(text) => {
+                  onEdit(text);
+                }}
                 value={term}
               />
             </View>
@@ -110,7 +111,7 @@ const App: () => React$Node = () => {
                       const imageSrc = item.images.original.url;
                       setSelectedGif(imageSrc);
                       setMode('message');
-                      setPlaceholderMessage('Send message');
+                      setGifs([]);
                       updateTerm('');
                     }}>
                     <Image
@@ -138,12 +139,6 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '600',
     color: 'black',
-  },
-  view: {
-    flex: 1,
-    alignItems: 'center',
-    padding: 10,
-    backgroundColor: 'darkblue',
   },
   textInputArea: {
     flex: 1,

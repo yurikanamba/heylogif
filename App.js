@@ -15,27 +15,31 @@ import {
 
 import {SvgXml} from 'react-native-svg';
 import GifButton from './assets/gifbutton.svg';
+import CloseButton from './assets/closebutton.svg';
 
 const App: () => React$Node = () => {
   const [gifs, setGifs] = useState([]);
-  const [term, updateTerm] = useState('');
+  const [term, updateTerm] = useState();
   const [selectedGif, setSelectedGif] = useState(null);
+  const [placeholderMessage, setPlaceholderMessage] = useState('Send message');
+  const [mode, setMode] = useState('message');
 
-  async function fetchGifs() {
+  async function fetchGifs(keyword) {
     try {
       const API_KEY = 'Rf18Q7xJzS3GY38swE3RkYX5PH3Axhpw';
       const BASE_URL = 'http://api.giphy.com/v1/gifs/search';
-      const resJson = await fetch(`${BASE_URL}?api_key=${API_KEY}&q=${term}`);
+      const resJson = await fetch(
+        `${BASE_URL}?api_key=${API_KEY}&q=${keyword}`,
+      );
       const res = await resJson.json();
       setGifs(res.data);
-      console.log(gifs);
     } catch (error) {
       console.warn(error);
     }
   }
   function onEdit(newTerm) {
     updateTerm(newTerm);
-    fetchGifs();
+    fetchGifs(term);
   }
 
   return (
@@ -62,9 +66,22 @@ const App: () => React$Node = () => {
               <Pressable
                 style={styles.gifBtn}
                 onPress={() => {
-                  console.log('pressed gif button');
+                  if (mode === 'message') {
+                    updateTerm('');
+                    setPlaceholderMessage('Search GIFs in Giphy...');
+                    setMode('gif');
+                    fetchGifs('piglet');
+                  } else {
+                    setPlaceholderMessage('Send message');
+                    setMode('message');
+                    updateTerm('');
+                  }
                 }}>
-                <SvgXml width="24" height="24" xml={GifButton} />
+                <SvgXml
+                  width="24"
+                  height="24"
+                  xml={mode === 'message' ? GifButton : CloseButton}
+                />
               </Pressable>
             </View>
             <View
@@ -73,32 +90,38 @@ const App: () => React$Node = () => {
                 marginHorizontal: 10,
               }}>
               <TextInput
-                placeholder="Search GIFs in Giphy..."
+                placeholder={placeholderMessage}
                 placeholderTextColor="#8F8F8F"
                 style={styles.textInput}
                 onChangeText={(text) => onEdit(text)}
+                value={term}
               />
             </View>
           </View>
-          <View>
-            <FlatList
-              horizontal
-              data={gifs}
-              renderItem={({item}) => (
-                <TouchableOpacity
-                  onPress={() => {
-                    const imageSrc = item.images.original.url;
-                    setSelectedGif(imageSrc);
-                  }}>
-                  <Image
-                    resizeMode="cover"
-                    source={{uri: item.images.original.url}}
-                    style={styles.image}
-                  />
-                </TouchableOpacity>
-              )}
-            />
-          </View>
+          {mode === 'gif' && (
+            <View>
+              <FlatList
+                horizontal
+                data={gifs}
+                renderItem={({item}) => (
+                  <TouchableOpacity
+                    onPress={() => {
+                      const imageSrc = item.images.original.url;
+                      setSelectedGif(imageSrc);
+                      setMode('message');
+                      setPlaceholderMessage('Send message');
+                      updateTerm('');
+                    }}>
+                    <Image
+                      resizeMode="cover"
+                      source={{uri: item.images.original.url}}
+                      style={styles.image}
+                    />
+                  </TouchableOpacity>
+                )}
+              />
+            </View>
+          )}
         </ScrollView>
       </SafeAreaView>
     </>

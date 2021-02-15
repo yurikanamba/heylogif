@@ -25,6 +25,7 @@ const App: () => React$Node = () => {
   const [selectedGif, setSelectedGif] = useState(null);
   const [mode, setMode] = useState('message');
   const [offset, setOffset] = useState(10);
+  const [noResults, setNoResults] = useState(false);
 
   async function fetchGifs(keyword) {
     try {
@@ -34,6 +35,11 @@ const App: () => React$Node = () => {
       const resJson = await fetch(endpoint);
       const res = await resJson.json();
       setGifs(res.data);
+      if (keyword && res.data <= 0) {
+        setNoResults(true);
+      } else {
+        setNoResults(false);
+      }
     } catch (error) {
       console.warn(error);
     }
@@ -116,6 +122,11 @@ const App: () => React$Node = () => {
               />
             </View>
           </View>
+          {noResults && (
+            <View style={styles.noResultContainer}>
+              <Text style={styles.noResultText}>No GIFs found for {term}</Text>
+            </View>
+          )}
           {mode === 'gif' && (
             <View>
               <FlatList
@@ -185,6 +196,16 @@ const styles = StyleSheet.create({
     width: 200,
     height: 150,
     marginHorizontal: 10,
+  },
+  noResultContainer: {
+    marginVertical: 20,
+    paddingHorizontal: 24,
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  noResultText: {
+    fontSize: 20,
   },
 });
 

@@ -18,18 +18,19 @@ import GifButton from './assets/gifbutton.svg';
 import CloseButton from './assets/closebutton.svg';
 
 const App: () => React$Node = () => {
+  const API_KEY = 'Rf18Q7xJzS3GY38swE3RkYX5PH3Axhpw';
+  const BASE_URL = 'http://api.giphy.com/v1/gifs';
   const [gifs, setGifs] = useState([]);
   const [term, updateTerm] = useState('');
   const [selectedGif, setSelectedGif] = useState(null);
   const [mode, setMode] = useState('message');
+  const [offset, setOffset] = useState(10);
 
   async function fetchGifs(keyword) {
     try {
-      const API_KEY = 'Rf18Q7xJzS3GY38swE3RkYX5PH3Axhpw';
-      const BASE_URL = 'http://api.giphy.com/v1/gifs';
       const endpoint = keyword
-        ? `${BASE_URL}/search?api_key=${API_KEY}&q=${keyword}`
-        : `${BASE_URL}/trending?api_key=${API_KEY}`;
+        ? `${BASE_URL}/search?api_key=${API_KEY}&q=${keyword}&limit=10`
+        : `${BASE_URL}/trending?api_key=${API_KEY}&limit=10`;
       const resJson = await fetch(endpoint);
       const res = await resJson.json();
       setGifs(res.data);
@@ -37,9 +38,19 @@ const App: () => React$Node = () => {
       console.warn(error);
     }
   }
-  function onEdit(newTerm) {
-    updateTerm(newTerm);
-    fetchGifs(newTerm);
+
+  async function fetchMoreGifs() {
+    try {
+      const endpoint = term
+        ? `${BASE_URL}/search?api_key=${API_KEY}&q=${term}&limit=10&offset=${offset}`
+        : `${BASE_URL}/trending?api_key=${API_KEY}&limit=10&offset=${offset}`;
+      const resJson = await fetch(endpoint);
+      const res = await resJson.json();
+      setOffset(offset + 10);
+      setGifs([...gifs, ...res.data]);
+    } catch (error) {
+      console.warn(error);
+    }
   }
 
   return (
@@ -72,6 +83,8 @@ const App: () => React$Node = () => {
                     setMode('gif');
                   } else {
                     setMode('message');
+                    setGifs([]);
+                    setOffset(10);
                     updateTerm('');
                   }
                 }}>
@@ -93,8 +106,11 @@ const App: () => React$Node = () => {
                 }
                 placeholderTextColor="#8F8F8F"
                 style={styles.textInput}
-                onChangeText={(text) => {
-                  onEdit(text);
+                onChangeText={(keyword) => {
+                  setGifs([]);
+                  setOffset(10);
+                  updateTerm(keyword);
+                  fetchGifs(keyword);
                 }}
                 value={term}
               />
@@ -112,6 +128,7 @@ const App: () => React$Node = () => {
                       setSelectedGif(imageSrc);
                       setMode('message');
                       setGifs([]);
+                      setOffset(10);
                       updateTerm('');
                     }}>
                     <Image
@@ -121,6 +138,10 @@ const App: () => React$Node = () => {
                     />
                   </TouchableOpacity>
                 )}
+                onEndReachedThreshold={0.1}
+                onEndReached={() => {
+                  fetchMoreGifs();
+                }}
               />
             </View>
           )}

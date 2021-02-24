@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from 'react';
+import React, {useEffect, useRef} from 'react';
 import {
   StyleSheet,
   View,
@@ -8,33 +8,30 @@ import {
 } from 'react-native';
 
 const GiphyCarousel: () => React$Node = ({
-  visible,
   apiKey,
-  searchTerm,
-  setSelectedGif,
-  setNoResults,
+  gifCarouselState,
+  dispatch,
 }) => {
   const BASE_URL = 'http://api.giphy.com/v1/gifs';
-  const [gifs, setGifs] = useState([]);
-  const [offset, setOffset] = useState(10);
+  const carouselEl = useRef(null);
 
   useEffect(() => {
-    fetchGifs(searchTerm);
-  }, [searchTerm]);
+    if (gifCarouselState.visible) {
+      fetchGifs();
+    }
+  }, [gifCarouselState.visible, gifCarouselState.searchTerm]);
 
-  async function fetchGifs(searchTerm) {
+  async function fetchGifs() {
     try {
-      const endpoint = searchTerm
-        ? `${BASE_URL}/search?api_key=${apiKey}&q=${searchTerm}&limit=10`
-        : `${BASE_URL}/trending?api_key=${apiKey}&limit=10`;
+      if (carouselEl !== null && carouselEl.current !== null) {
+        carouselEl.current.scrollToOffset({animated: true, offset: 0});
+      }
+      const endpoint = gifCarouselState.searchTerm
+        ? `${BASE_URL}/search?api_key=${apiKey}&q=${gifCarouselState.searchTerm}&limit=10&offset=0`
+        : `${BASE_URL}/trending?api_key=${apiKey}&limit=10&offset=0`;
       const resJson = await fetch(endpoint);
       const res = await resJson.json();
-      setGifs(res.data);
-      if (searchTerm && res.data <= 0) {
-        setNoResults(true);
-      } else {
-        setNoResults(false);
-      }
+      dispatch({type: 'SET_GIFS', gifs: res.data});
     } catch (error) {
       console.warn(error);
     }
@@ -42,13 +39,13 @@ const GiphyCarousel: () => React$Node = ({
 
   async function fetchMoreGifs() {
     try {
-      const endpoint = searchTerm
-        ? `${BASE_URL}/search?api_key=${apiKey}&q=${searchTerm}&limit=10&offset=${offset}`
-        : `${BASE_URL}/trending?api_key=${apiKey}&limit=10&offset=${offset}`;
+      const endpoint = gifCarouselState.searchTerm
+        ? `${BASE_URL}/search?api_key=${apiKey}&q=${gifCarouselState.searchTerm}&limit=10&offset=${gifCarouselState.offset}`
+        : `${BASE_URL}/trending?api_key=${apiKey}&limit=10&offset=${gifCarouselState.offset}`;
       const resJson = await fetch(endpoint);
       const res = await resJson.json();
-      setOffset(offset + 10);
-      setGifs([...gifs, ...res.data]);
+      dispatch({type: 'SET_MORE_GIFS', gifs: res.data});
+      dispatch({type: 'INCREASE_OFFSET'});
     } catch (error) {
       console.warn(error);
     }
@@ -56,17 +53,17 @@ const GiphyCarousel: () => React$Node = ({
 
   return (
     <>
-      {visible && (
+      {gifCarouselState.visible && gifCarouselState.gifs && (
         <View>
           <FlatList
             horizontal
             showsHorizontalScrollIndicator={false}
-            data={gifs}
+            data={gifCarouselState.gifs}
             renderItem={({item}) => (
               <TouchableOpacity
                 onPress={() => {
                   const imageSrc = item.images.original.url;
-                  setSelectedGif(imageSrc);
+                  dispatch({type: 'SELECT_GIF', selectedGif: imageSrc});
                 }}>
                 <Image
                   resizeMode="cover"
@@ -79,6 +76,7 @@ const GiphyCarousel: () => React$Node = ({
             onEndReached={() => {
               fetchMoreGifs();
             }}
+            ref={carouselEl}
           />
         </View>
       )}

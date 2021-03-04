@@ -5,30 +5,51 @@ import {
   Image,
   TouchableOpacity,
   FlatList,
+  Text,
 } from 'react-native';
+
+import {useGiphyCarouselReducer} from './GiphyCarouselReducer';
 
 const GiphyCarousel: () => React$Node = ({
   apiKey,
-  gifCarouselState,
-  dispatch,
+  visible,
+  searchTerm,
+  onPress,
 }) => {
+  const [state, dispatch] = useGiphyCarouselReducer();
+  const {gifs, on, search, offset} = state;
   const BASE_URL = 'http://api.giphy.com/v1/gifs';
   const carouselEl = useRef(null);
+  const noResults = on && search !== '' && gifs.length <= 0;
 
   useEffect(() => {
-    if (gifCarouselState.visible) {
+    dispatch({type: 'TOGGLE_SWITCH', payload: visible});
+  }, [visible]);
+
+  useEffect(() => {
+    dispatch({type: 'HANDLE_SEARCH', payload: searchTerm});
+  }, [searchTerm]);
+
+  useEffect(() => {
+    if (on) {
       fetchGifs();
     }
-  }, [gifCarouselState.visible, gifCarouselState.searchTerm]);
+  }, [on, search]);
+
+  useEffect(() => {
+    if (offset > 0) {
+      fetchMoreGifs();
+    }
+  }, [offset]);
 
   async function fetchGifs() {
     try {
       if (carouselEl !== null && carouselEl.current !== null) {
         carouselEl.current.scrollToOffset({animated: true, offset: 0});
       }
-      const endpoint = gifCarouselState.searchTerm
-        ? `${BASE_URL}/search?api_key=${apiKey}&q=${gifCarouselState.searchTerm}&limit=10&offset=0`
-        : `${BASE_URL}/trending?api_key=${apiKey}&limit=10&offset=0`;
+      const endpoint = search
+        ? `${BASE_URL}/search?api_key=${apiKey}&q=${search}&limit=10&offset=${offset}`
+        : `${BASE_URL}/trending?api_key=${apiKey}&limit=10&offset=${offset}`;
       const resJson = await fetch(endpoint);
       const res = await resJson.json();
       dispatch({type: 'SET_GIFS', gifs: res.data});
@@ -39,13 +60,12 @@ const GiphyCarousel: () => React$Node = ({
 
   async function fetchMoreGifs() {
     try {
-      const endpoint = gifCarouselState.searchTerm
-        ? `${BASE_URL}/search?api_key=${apiKey}&q=${gifCarouselState.searchTerm}&limit=10&offset=${gifCarouselState.offset}`
-        : `${BASE_URL}/trending?api_key=${apiKey}&limit=10&offset=${gifCarouselState.offset}`;
+      const endpoint = search
+        ? `${BASE_URL}/search?api_key=${apiKey}&q=${search}&limit=10&offset=${offset}`
+        : `${BASE_URL}/trending?api_key=${apiKey}&limit=10&offset=${offset}`;
       const resJson = await fetch(endpoint);
       const res = await resJson.json();
       dispatch({type: 'SET_MORE_GIFS', gifs: res.data});
-      dispatch({type: 'INCREASE_OFFSET'});
     } catch (error) {
       console.warn(error);
     }
@@ -53,17 +73,18 @@ const GiphyCarousel: () => React$Node = ({
 
   return (
     <>
-      {gifCarouselState.visible && gifCarouselState.gifs && (
+      {on && gifs && (
         <View>
           <FlatList
             horizontal
             showsHorizontalScrollIndicator={false}
-            data={gifCarouselState.gifs}
+            data={gifs}
             renderItem={({item}) => (
               <TouchableOpacity
                 onPress={() => {
                   const imageSrc = item.images.original.url;
                   dispatch({type: 'SELECT_GIF', selectedGif: imageSrc});
+                  onPress(imageSrc);
                 }}>
                 <Image
                   resizeMode="cover"
@@ -74,10 +95,15 @@ const GiphyCarousel: () => React$Node = ({
             )}
             onEndReachedThreshold={0.1}
             onEndReached={() => {
-              fetchMoreGifs();
+              dispatch({type: 'INCREASE_OFFSET'});
             }}
             ref={carouselEl}
           />
+        </View>
+      )}
+      {noResults && (
+        <View style={styles.noResultContainer}>
+          <Text style={styles.noResultText}>No GIFs found for {search}</Text>
         </View>
       )}
     </>
@@ -89,6 +115,16 @@ const styles = StyleSheet.create({
     width: 200,
     height: 150,
     marginHorizontal: 10,
+  },
+  noResultContainer: {
+    marginVertical: 20,
+    paddingHorizontal: 24,
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  noResultText: {
+    fontSize: 20,
   },
 });
 

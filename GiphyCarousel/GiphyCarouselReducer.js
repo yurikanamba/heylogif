@@ -1,32 +1,34 @@
-const initialGifCarouselState = {
-  visible: false,
-  searchTerm: '',
+import {useReducer} from 'react';
+
+const initialState = {
+  on: false,
+  search: '',
   selectedGif: null,
   gifs: [],
-  offset: 10,
+  offset: 0,
 };
 
-const gifCarouselReducer = (state, action) => {
+const reducer = (state, action) => {
   switch (action.type) {
     case 'TOGGLE_SWITCH':
       return {
-        ...state,
-        visible: !state.visible,
-        searchTerm: '',
+        ...initialState,
+        on: action.payload,
+        search: '',
         gifs: [],
-        offset: 10,
+        offset: 0,
       };
     case 'HANDLE_SEARCH':
       return {
         ...state,
-        searchTerm: action.payload,
-        offset: 10,
+        search: action.payload,
+        offset: 0,
       };
     case 'SELECT_GIF':
       return {
         ...state,
-        visible: false,
-        searchTerm: '',
+        on: false,
+        search: '',
         gifs: [],
         selectedGif: action.selectedGif,
       };
@@ -34,21 +36,23 @@ const gifCarouselReducer = (state, action) => {
       return {
         ...state,
         gifs: action.gifs,
-        offset: 10,
+        offset: 0,
+      };
+    case 'INCREASE_OFFSET':
+      return {
+        ...state,
+        offset: state.offset + 11,
       };
     case 'SET_MORE_GIFS':
       return {
         ...state,
         gifs: [...state.gifs, ...action.gifs],
       };
-    case 'INCREASE_OFFSET':
-      return {
-        ...state,
-        offset: state.offset + 10,
-      };
     default:
       return state;
   }
 };
 
-export {initialGifCarouselState, gifCarouselReducer};
+export const useGiphyCarouselReducer = () => {
+  return useReducer(reducer, initialState);
+};

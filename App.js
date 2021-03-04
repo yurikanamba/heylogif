@@ -1,4 +1,4 @@
-import React, {useReducer} from 'react';
+import React, {useState} from 'react';
 import {
   SafeAreaView,
   StyleSheet,
@@ -10,25 +10,21 @@ import {
   Pressable,
   TextInput,
 } from 'react-native';
-
 import GiphyCarousel from './GiphyCarousel/GiphyCarousel';
-import {
-  initialGifCarouselState,
-  gifCarouselReducer,
-} from './GiphyCarousel/GiphyCarouselReducer';
-
 import {SvgXml} from 'react-native-svg';
 import GifButton from './assets/gifbutton.svg';
 import CloseButton from './assets/closebutton.svg';
 
 const App: () => React$Node = () => {
-  const [gifCarouselState, dispatch] = useReducer(
-    gifCarouselReducer,
-    initialGifCarouselState,
-  );
   const API_KEY = 'Rf18Q7xJzS3GY38swE3RkYX5PH3Axhpw';
-  const noResults =
-    gifCarouselState.searchTerm !== '' && gifCarouselState.gifs.length <= 0;
+  const [visible, setVisible] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedGif, setSelectedGif] = useState(null);
+  const onPress = (gif) => {
+    setSelectedGif(gif);
+    setVisible(false);
+    setSearchTerm('');
+  };
 
   return (
     <>
@@ -38,11 +34,11 @@ const App: () => React$Node = () => {
           <View style={styles.sectionContainer}>
             <Text style={styles.sectionTitle}>Heylo Gif Carousel Demo</Text>
           </View>
-          {gifCarouselState.selectedGif && (
+          {selectedGif && (
             <Image
               style={styles.image}
               resizeMode="cover"
-              source={{uri: gifCarouselState.selectedGif}}
+              source={{uri: selectedGif}}
             />
           )}
           <View style={styles.textInputArea}>
@@ -54,12 +50,12 @@ const App: () => React$Node = () => {
               <Pressable
                 style={styles.gifBtn}
                 onPress={() => {
-                  dispatch({type: 'TOGGLE_SWITCH'});
+                  setVisible(!visible);
                 }}>
                 <SvgXml
                   width="24"
                   height="24"
-                  xml={!gifCarouselState.visible ? GifButton : CloseButton}
+                  xml={!visible ? GifButton : CloseButton}
                 />
               </Pressable>
             </View>
@@ -69,32 +65,20 @@ const App: () => React$Node = () => {
                 marginHorizontal: 10,
               }}>
               <TextInput
-                placeholder={
-                  !gifCarouselState.visible
-                    ? 'Send message'
-                    : 'Search GIFs in Giphy'
-                }
+                placeholder={!visible ? 'Send message' : 'Search GIFs in Giphy'}
                 placeholderTextColor="#8F8F8F"
                 style={styles.textInput}
-                onChangeText={(text) =>
-                  dispatch({type: 'HANDLE_SEARCH', payload: text})
-                }
-                value={gifCarouselState.searchTerm}
+                onChangeText={(text) => setSearchTerm(text)}
+                value={searchTerm}
               />
             </View>
           </View>
           <GiphyCarousel
             apiKey={API_KEY}
-            gifCarouselState={gifCarouselState}
-            dispatch={dispatch}
+            visible={visible}
+            searchTerm={searchTerm}
+            onPress={onPress}
           />
-          {noResults && (
-            <View style={styles.noResultContainer}>
-              <Text style={styles.noResultText}>
-                No GIFs found for {gifCarouselState.searchTerm}
-              </Text>
-            </View>
-          )}
         </ScrollView>
       </SafeAreaView>
     </>
@@ -130,16 +114,6 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 38,
     paddingHorizontal: 10,
-  },
-  noResultContainer: {
-    marginVertical: 20,
-    paddingHorizontal: 24,
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  noResultText: {
-    fontSize: 20,
   },
   image: {
     width: 200,

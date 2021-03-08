@@ -14,9 +14,6 @@ const reducer = (state, action) => {
       return {
         ...initialState,
         on: action.payload,
-        search: '',
-        gifs: [],
-        offset: 0,
       };
     case 'HANDLE_SEARCH':
       return {
@@ -26,10 +23,7 @@ const reducer = (state, action) => {
       };
     case 'SELECT_GIF':
       return {
-        ...state,
-        on: false,
-        search: '',
-        gifs: [],
+        ...initialState,
         selectedGif: action.selectedGif,
       };
     case 'SET_GIFS':
